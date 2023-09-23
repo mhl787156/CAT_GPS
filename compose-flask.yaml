@@ -1,0 +1,64 @@
+services:
+  backend: 
+    build:
+      context: app
+      target: builder
+    # flask requires SIGINT to stop gracefully
+    # (default stop signal from Compose is SIGTERM)
+    stop_signal: SIGINT
+    volumes:
+      - ./app:/app
+    ports:
+      - '8000:8000'
+    depends_on:
+      - db
+    environment:
+      - DATABASE_DB=example
+      - DATABASE_USER=root
+      - DATABASE_PASSWORD=/run/secrets/db-password
+      - DATABASE_HOST=db
+      - NODE_ENV=development
+    networks:
+      - public
+      - private
+  
+  db:
+    # https://hub.docker.com/_/influxdb 
+    image: influxdb:latest
+    restart: always
+    secrets:
+      - db-password
+    volumes:
+      - db-data:/var/lib/influxdb2
+    networks:
+      - private
+    environment:
+      - MYSQL_DATABASE=example
+      - MYSQL_ROOT_PASSWORD_FILE=/run/secrets/db-password
+    ports:
+      - "8086:8086"
+
+  frontend:
+    build:
+      context: frontend
+      target: development
+    ports:
+      - 3000:3000
+    volumes:
+      - ./frontend/src:/code/src
+      - /code/node_modules
+    networks:
+      - public
+    depends_on:
+      - backend
+
+
+networks:
+  public:
+  private:
+volumes:
+  back-notused:
+  db-data:
+secrets:
+  db-password:
+    file: db/password.txt
