@@ -6,6 +6,8 @@ services:
     # flask requires SIGINT to stop gracefully
     # (default stop signal from Compose is SIGTERM)
     stop_signal: SIGINT
+    secrets:
+      - db-password
     volumes:
       - ./app:/app
     ports:
@@ -13,10 +15,13 @@ services:
     depends_on:
       - db
     environment:
+      - SERVER_HOST="0.0.0.0"
+      - SERVER_PORT="8000"
       - INFLUXDB_USER=root
-      - INFLUXDB_PASSWORD=/run/secrets/db-password
+      - INFLUXDB_PASSWORD_FILE=/run/secrets/db-password
       - INFLUXDB_HOST=db
       - INFLUXDB_PORT=8086
+      - DELAY_START=5.0
     networks:
       - private
   
@@ -28,28 +33,36 @@ services:
       - db-password
     volumes:
       - db-data:/var/lib/influxdb2
+    environment:
+      - DOCKER_INFLUXDB_INIT_MODE=setup
+      - DOCKER_INFLUXDB_INIT_USERNAME=root
+      - DOCKER_INFLUXDB_INIT_PASSWORD=rootrootroot
+      # - DOCKER_INFLUXDB_INIT_PASSWORD_FILE=/run/secrets/db-password
+      - DOCKER_INFLUXDB_INIT_ORG=cat
+      - DOCKER_INFLUXDB_INIT_BUCKET=cat-gps 
     networks:
       - private
     ports:
       - "8086:8086"
+    
 
-  frontend:
-    build:
-      context: frontend
-      target: development
-    ports:
-      - 3000:3000
-    environment:
-      - BACKEND_HOST=backend
-      - BACKEND_PORT=8000
-    volumes:
-      - ./frontend/src:/code/src
-      - /code/node_modules
-    networks:
-      - public
-      - private
-    depends_on:
-      - backend
+  # frontend:
+  #   build:
+  #     context: frontend
+  #     target: development
+  #   ports:
+  #     - 3000:3000
+  #   environment:
+  #     - BACKEND_HOST=backend
+  #     - BACKEND_PORT=8000
+  #   volumes:
+  #     - ./frontend/src:/code/src
+  #     - /code/node_modules
+  #   networks:
+  #     - public
+  #     - private
+  #   depends_on:
+  #     - backend
 
 
 networks:
